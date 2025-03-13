@@ -16,7 +16,10 @@ interface Props {
 const GRID_SIZE = 20;
 const CELL_SIZE = 20;
 const INITIAL_SNAKE_LENGTH = 3;
-const GAME_SPEED = 100;
+const BASE_SPEED = 150; // Higher number = slower speed
+const MAX_SPEED = 50;   // Lower number = faster maximum speed
+const SPEED_INCREMENT = 10; // Speed increase every 4 foods
+const FOODS_PER_LEVEL = 4;  // Number of foods needed to increase speed
 
 const Direction = {
     UP: { x: 0, y: -1 },
@@ -120,6 +123,11 @@ export const SnakeGame = ({ onScoreUpdate, onGameOver, gameOver }: Props) => {
 
     useEffect(() => {
         const handleKeyPress = (e: KeyboardEvent) => {
+            // Prevent arrow keys from scrolling
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                e.preventDefault();
+            }
+
             switch (e.key) {
                 case "ArrowUp":
                     if (direction !== Direction.DOWN) setDirection(Direction.UP);
@@ -146,9 +154,12 @@ export const SnakeGame = ({ onScoreUpdate, onGameOver, gameOver }: Props) => {
 
     useEffect(() => {
         if (!gameOver) {
+            if (gameLoopRef.current) {
+                clearInterval(gameLoopRef.current);
+            }
             gameLoopRef.current = setInterval(() => {
                 moveSnake();
-            }, GAME_SPEED);
+            }, calculateGameSpeed(score));
         }
 
         return () => {
@@ -156,11 +167,18 @@ export const SnakeGame = ({ onScoreUpdate, onGameOver, gameOver }: Props) => {
                 clearInterval(gameLoopRef.current);
             }
         };
-    }, [snake, direction, food, gameOver]);
+    }, [snake, direction, food, gameOver, score]);
 
     useEffect(() => {
         drawGame();
     }, [snake, food]);
+
+    // Calculate game speed based on score level
+    const calculateGameSpeed = (score: number) => {
+        const level = Math.floor(score / FOODS_PER_LEVEL);
+        const speedReduction = level * SPEED_INCREMENT;
+        return Math.max(MAX_SPEED, BASE_SPEED - speedReduction);
+    };
 
     return (
         <canvas

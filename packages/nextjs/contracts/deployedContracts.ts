@@ -5,14 +5,50 @@
 import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 
 const deployedContracts = {
-  10143: {
-    YourContract: {
-      address: "0x952f40b7beb98a45d3f3d4f9918f60d054e247c2",
+  11155111: {
+    SnakeGame: {
+      address: "0xfa6610f0762bee218772cd2aabd6e0f9fa449cb9",
       abi: [
         {
           type: "function",
-          name: "counter",
+          name: "getHighScores",
           inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "tuple[]",
+              internalType: "struct SnakeGame.Score[]",
+              components: [
+                {
+                  name: "player",
+                  type: "address",
+                  internalType: "address",
+                },
+                {
+                  name: "score",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+                {
+                  name: "timestamp",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+              ],
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "getPlayerBestScore",
+          inputs: [
+            {
+              name: "_player",
+              type: "address",
+              internalType: "address",
+            },
+          ],
           outputs: [
             {
               name: "",
@@ -24,25 +60,43 @@ const deployedContracts = {
         },
         {
           type: "function",
-          name: "increment",
-          inputs: [],
-          outputs: [],
-          stateMutability: "nonpayable",
+          name: "highScores",
+          inputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [
+            {
+              name: "player",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "score",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "timestamp",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
         },
-      ],
-      inheritedFunctions: {},
-      deploymentFile: "run-1740823985.json",
-      deploymentScript: "Deploy.s.sol",
-    },
-  },
-  20143: {
-    YourContract: {
-      address: "0x927d45fb81b1b14dc4e8de8f62930d5c33a43d22",
-      abi: [
         {
           type: "function",
-          name: "counter",
-          inputs: [],
+          name: "playerBestScores",
+          inputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
           outputs: [
             {
               name: "",
@@ -54,14 +108,64 @@ const deployedContracts = {
         },
         {
           type: "function",
-          name: "increment",
-          inputs: [],
+          name: "submitScore",
+          inputs: [
+            {
+              name: "_score",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
           outputs: [],
           stateMutability: "nonpayable",
         },
+        {
+          type: "event",
+          name: "NewHighScore",
+          inputs: [
+            {
+              name: "player",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "score",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+            {
+              name: "timestamp",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "NewPersonalBest",
+          inputs: [
+            {
+              name: "player",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "score",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
       ],
       inheritedFunctions: {},
-      deploymentFile: "run-1738056711.json",
+      deploymentFile: "run-1741886163.json",
       deploymentScript: "Deploy.s.sol",
     },
   },
