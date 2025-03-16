@@ -69,7 +69,7 @@ const PRIVATE_KEYS = [
 ].filter((key): key is string => !!key);
 
 // Contract details
-const CONTRACT_ADDRESS = "0x952f40B7bEB98A45D3f3d4f9918F60d054e247C2";
+const CONTRACT_ADDRESS = "0x8bc0d6906c180f9ea03187efb9ad7066f2be4e87";
 
 
 // Queue and wallet tracking
@@ -90,7 +90,9 @@ async function processSingleTransaction(privateKey: string, tx: QueuedTx) {
   const startTime = Date.now();
   try {
     // Execute transaction and get the hash
-    const account = privateKeyToAccount(`0x${privateKey}`);
+    // Make sure the private key has 0x prefix
+    const formattedKey = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
+    const account = privateKeyToAccount(formattedKey as `0x${string}`);
     const wallet = createWalletClient({
       account,
       chain: monadTestnet,
@@ -100,7 +102,8 @@ async function processSingleTransaction(privateKey: string, tx: QueuedTx) {
     const hash = await wallet.writeContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
-      functionName: "increment",
+      functionName: "submitScore",
+      args: [BigInt(1)],
       chain: monadTestnet,
     });
 
