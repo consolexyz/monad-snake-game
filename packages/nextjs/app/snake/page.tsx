@@ -8,7 +8,6 @@ import { useAccount } from "wagmi";
 export default function SnakePage() {
     const [currentScore, setCurrentScore] = useState(0);
     const [gameOver, setGameOver] = useState(false);
-    const [apiStatus, setApiStatus] = useState<{ message: string, isError: boolean } | null>(null);
     const { address } = useAccount();
 
     const handleScoreUpdate = async (newScore: number) => {
@@ -55,8 +54,6 @@ export default function SnakePage() {
         setCurrentScore(finalScore);
 
         if (address && finalScore > 0) {
-            setApiStatus({ message: "Saving your score...", isError: false });
-
             // Save final score to the database only
             try {
                 console.log(`Saving final score to database: address=${address}, score=${finalScore}`);
@@ -100,13 +97,6 @@ export default function SnakePage() {
                             `;
                         }
                     }
-
-                    setApiStatus({
-                        message: data.isNewHighScore
-                            ? "New high score saved!"
-                            : "Score recorded (not a new high score)",
-                        isError: false
-                    });
                 } else {
                     console.error("❌ Failed to save score:", data.error);
 
@@ -120,11 +110,6 @@ export default function SnakePage() {
                             </div>
                         `;
                     }
-
-                    setApiStatus({
-                        message: `Error saving score: ${data.error}`,
-                        isError: true
-                    });
                 }
             } catch (error) {
                 console.error("Error saving score:", error);
@@ -139,24 +124,24 @@ export default function SnakePage() {
                         </div>
                     `;
                 }
-
-                setApiStatus({
-                    message: "Failed to save score",
-                    isError: true
-                });
             }
         } else if (!address) {
-            setApiStatus({
-                message: "Connect your wallet to save scores",
-                isError: true
-            });
+            // Update the save status element to indicate wallet connection needed
+            const saveStatusElement = document.getElementById('saveStatus');
+            if (saveStatusElement) {
+                saveStatusElement.innerHTML = `
+                    <div class="badge badge-warning gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Connect wallet to save scores
+                    </div>
+                `;
+            }
         }
     };
 
     const handleRestart = () => {
         setGameOver(false);
         setCurrentScore(0);
-        setApiStatus(null);
 
         // Clear the save status
         const saveStatusElement = document.getElementById('saveStatus');
@@ -182,15 +167,6 @@ export default function SnakePage() {
 
             {gameOver && (
                 <div className="flex flex-col items-center gap-4">
-                    {apiStatus && (
-                        <div className={`alert ${apiStatus.isError ? 'alert-warning' : 'alert-success'} mb-4 max-w-md`}>
-                            <div>
-                                <span className="font-bold">📝 Status:</span>
-                                <span className="ml-2">{apiStatus.message}</span>
-                            </div>
-                        </div>
-                    )}
-
                     <div className="flex flex-col items-center mb-4">
                         <div className="stats shadow">
                             <div className="stat">
