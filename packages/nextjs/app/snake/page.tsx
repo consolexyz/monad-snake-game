@@ -2,42 +2,51 @@
 
 import { useEffect, useState } from "react";
 import { SnakeGame } from "./SnakeGame";
-import { useScaffoldContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 
 export default function SnakePage() {
     const [currentScore, setCurrentScore] = useState(0);
     const [gameOver, setGameOver] = useState(false);
-    const [apiStatus, setApiStatus] = useState<{ message: string, isError: boolean, type: 'blockchain' | 'database' | 'general' } | null>(null);
+    const [apiStatus, setApiStatus] = useState<{ message: string, isError: boolean } | null>(null);
     const { address } = useAccount();
-
-    const { data: snakeGameContract } = useScaffoldContract({
-        contractName: "SnakeGame",
-    });
-
-    const { writeContractAsync } = useScaffoldWriteContract({
-        contractName: "SnakeGame",
-    });
 
     const handleScoreUpdate = async (newScore: number) => {
         setCurrentScore(newScore);
 
         // Send transaction via relayer for each food eaten
-        try {
-            const response = await fetch("/api/relayer/increment", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ score: newScore }),
-            });
+        if (address) {
+            console.log("🎮 Sending score update to blockchain via relayer...");
+            console.log("📊 Score:", newScore);
+            console.log("👤 Player:", address);
 
-            if (!response.ok) {
-                console.warn("Relayer response not OK:", response.status);
+            try {
+                const response = await fetch("/api/relayer/increment", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        address: address,
+                        score: newScore
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    console.warn("❌ Relayer response not OK:", response.status);
+                    console.warn("Error details:", data);
+                } else {
+                    console.log("✅ Score submitted to blockchain via relayer:", newScore);
+                    if (data.transactionHash) {
+                        console.log("🔗 Transaction hash:", data.transactionHash);
+                        console.log("🎯 Transaction successful! Score updated on blockchain");
+                    }
+                }
+            } catch (error) {
+                console.error("❌ Failed to send score update via relayer:", error);
             }
-        } catch (error) {
-            console.error("Failed to send score update:", error);
         }
     };
 
@@ -46,26 +55,11 @@ export default function SnakePage() {
         setCurrentScore(finalScore);
 
         if (address && finalScore > 0) {
-            setApiStatus({ message: "Saving your score...", isError: false, type: 'general' });
+            setApiStatus({ message: "Saving your score...", isError: false });
 
-            // First try to save to the blockchain
-            let blockchainSuccess = false;
+            // Save final score to the database only
             try {
-                await writeContractAsync({
-                    functionName: "submitScore",
-                    args: [BigInt(finalScore)],
-                });
-                console.log("Score submitted to blockchain successfully");
-                blockchainSuccess = true;
-                setApiStatus({ message: "Score saved to blockchain! Saving to database...", isError: false, type: 'blockchain' });
-            } catch (error) {
-                console.error("Error submitting score to blockchain:", error);
-                setApiStatus({ message: "Failed to save score to blockchain, trying database...", isError: true, type: 'blockchain' });
-            }
-
-            // Then try to save to the database
-            try {
-                console.log(`Attempting to save score to database: address=${address}, score=${finalScore}`);
+                console.log(`Saving final score to database: address=${address}, score=${finalScore}`);
 
                 const response = await fetch('/api/scores', {
                     method: 'POST',
@@ -84,7 +78,7 @@ export default function SnakePage() {
                 console.log("API response data:", data);
 
                 if (data.success) {
-                    console.log("✅ POST REQUEST SUCCESSFUL!");
+                    console.log("✅ Score saved successfully!");
                     console.log(`Score saved with ID: ${data.id}`);
 
                     // Update the save status element
@@ -109,13 +103,12 @@ export default function SnakePage() {
 
                     setApiStatus({
                         message: data.isNewHighScore
-                            ? (blockchainSuccess ? "New high score saved to blockchain and database!" : "New high score saved to database!")
-                            : (blockchainSuccess ? "Score recorded (not a new high score)" : "Score recorded (not a new high score)"),
-                        isError: false,
-                        type: 'database'
+                            ? "New high score saved!"
+                            : "Score recorded (not a new high score)",
+                        isError: false
                     });
                 } else {
-                    console.error("❌ POST REQUEST FAILED:", data.error);
+                    console.error("❌ Failed to save score:", data.error);
 
                     // Update the save status element
                     const saveStatusElement = document.getElementById('saveStatus');
@@ -123,21 +116,18 @@ export default function SnakePage() {
                         saveStatusElement.innerHTML = `
                             <div class="badge badge-error gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                Database error
+                                Error saving score
                             </div>
                         `;
                     }
 
                     setApiStatus({
-                        message: blockchainSuccess
-                            ? `Score saved to blockchain but database error: ${data.error}`
-                            : `Error saving score: ${data.error}`,
-                        isError: true,
-                        type: 'database'
+                        message: `Error saving score: ${data.error}`,
+                        isError: true
                     });
                 }
-            } catch (dbError) {
-                console.error("Error saving score to database:", dbError);
+            } catch (error) {
+                console.error("Error saving score:", error);
 
                 // Update the save status element
                 const saveStatusElement = document.getElementById('saveStatus');
@@ -145,24 +135,20 @@ export default function SnakePage() {
                     saveStatusElement.innerHTML = `
                         <div class="badge badge-error gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            Database connection failed
+                            Failed to save score
                         </div>
                     `;
                 }
 
                 setApiStatus({
-                    message: blockchainSuccess
-                        ? "Score saved to blockchain but failed to save to database"
-                        : "Failed to save score to database",
-                    isError: true,
-                    type: 'database'
+                    message: "Failed to save score",
+                    isError: true
                 });
             }
         } else if (!address) {
             setApiStatus({
                 message: "Connect your wallet to save scores",
-                isError: true,
-                type: 'general'
+                isError: true
             });
         }
     };
@@ -199,7 +185,7 @@ export default function SnakePage() {
                     {apiStatus && (
                         <div className={`alert ${apiStatus.isError ? 'alert-warning' : 'alert-success'} mb-4 max-w-md`}>
                             <div>
-                                <span className="font-bold">{apiStatus.type === 'blockchain' ? '🔗 Blockchain:' : apiStatus.type === 'database' ? '💾 Database:' : '📝 Status:'}</span>
+                                <span className="font-bold">📝 Status:</span>
                                 <span className="ml-2">{apiStatus.message}</span>
                             </div>
                         </div>
