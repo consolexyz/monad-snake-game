@@ -149,7 +149,6 @@ export async function POST(request: Request) {
             }
 
             console.log("POST /api/scores - Successfully processed score");
-            console.log("==================================================");
             return NextResponse.json({
                 ...result,
                 isNewHighScore,
@@ -170,8 +169,6 @@ export async function POST(request: Request) {
         }
     } catch (error) {
         console.error("POST /api/scores - Error:", error);
-        console.log("==================================================");
-
         return NextResponse.json(
             {
                 success: false,

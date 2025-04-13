@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { FaucetButton, RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
+import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 
 /**
  * Site header
@@ -22,7 +22,6 @@ export const Header = () => {
           Leaderboard
         </Link>
         <RainbowKitCustomConnectButton />
-        <FaucetButton />
       </div>
     </div>
   );
